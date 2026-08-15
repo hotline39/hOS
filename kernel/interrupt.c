@@ -1,5 +1,8 @@
 #include "interrupt.h"
 #include "vga.h"
+#include "pic.h"
+#include "timer.h"
+#include "keyboard.h"
 
 static const char* exception_messages[] =
 {
@@ -43,9 +46,13 @@ void exception_handler(unsigned int number)
     vga_write("Exception: ");
 
     if (number < 32)
+    {
         vga_write(exception_messages[number]);
+    }
     else
+    {
         vga_write("Unknown");
+    }
 
     vga_write("\nSystem halted.\n");
 
@@ -54,4 +61,18 @@ void exception_handler(unsigned int number)
         __asm__ volatile ("cli");
         __asm__ volatile ("hlt");
     }
+}
+
+void irq_handler(unsigned int irq)
+{
+    if (irq == 0)
+    {
+        timer_handler();
+    }
+    else if (irq == 1)
+    {
+        keyboard_handler();
+    }
+
+    pic_send_eoi((unsigned char)irq);
 }

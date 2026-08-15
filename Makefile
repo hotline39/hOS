@@ -61,6 +61,23 @@ $(BUILD)/pic.o: kernel/pic.c | $(BUILD)
 	$(CC) $(CFLAGS) -Iinclude -c $< -o $@
 
 
+$(BUILD)/timer.o: kernel/timer.c | $(BUILD)
+	$(CC) $(CFLAGS) -Iinclude -c $< -o $@
+
+
+$(BUILD)/keyboard.o: kernel/keyboard.c | $(BUILD)
+	$(CC) $(CFLAGS) -Iinclude -c $< -o $@
+
+
+$(BUILD)/shell.o: kernel/shell.c | $(BUILD)
+	$(CC) $(CFLAGS) -Iinclude -c $< -o $@
+
+$(BUILD)/pmm.o: kernel/pmm.c | $(BUILD)
+	$(CC) $(CFLAGS) -Iinclude -c $< -o $@
+
+$(BUILD)/paging.o: kernel/paging.c | $(BUILD)
+	$(CC) $(CFLAGS) -Iinclude -c $< -o $@
+
 $(KERNEL): \
 	$(BUILD)/boot.o \
 	$(BUILD)/kernel.o \
@@ -70,6 +87,11 @@ $(KERNEL): \
 	$(BUILD)/idt.o \
 	$(BUILD)/interrupt.o \
 	$(BUILD)/pic.o \
+	$(BUILD)/timer.o \
+	$(BUILD)/keyboard.o \
+	$(BUILD)/shell.o \
+	$(BUILD)/pmm.o \
+	$(BUILD)/paging.o \
 	$(BUILD)/idt_load.o \
 	$(BUILD)/isr.o
 	$(LD) $(LDFLAGS) -o $@ $^

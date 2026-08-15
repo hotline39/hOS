@@ -41,23 +41,23 @@ void pic_remap(void)
     outb(PIC1_COMMAND, ICW1_INIT | ICW1_ICW4);
     outb(PIC2_COMMAND, ICW1_INIT | ICW1_ICW4);
 
-    // Master PIC → IDT 32~39
+    /* Master PIC -> IDT 32~39 */
     outb(PIC1_DATA, 0x20);
 
-    // Slave PIC → IDT 40~47
+    /* Slave PIC -> IDT 40~47 */
     outb(PIC2_DATA, 0x28);
 
-    // Master IRQ2 → Slave PIC
+    /* Master IRQ2 -> Slave PIC */
     outb(PIC1_DATA, 0x04);
 
-    // Slave PIC cascade identity
+    /* Slave cascade identity */
     outb(PIC2_DATA, 0x02);
 
-    // 8086 mode
+    /* 8086 mode */
     outb(PIC1_DATA, ICW4_8086);
     outb(PIC2_DATA, ICW4_8086);
 
-    // 기존 mask 복원
+    /* 기존 mask 복원 */
     outb(PIC1_DATA, master_mask);
     outb(PIC2_DATA, slave_mask);
 }
@@ -70,4 +70,25 @@ void pic_send_eoi(unsigned char irq)
     }
 
     outb(PIC1_COMMAND, 0x20);
+}
+
+void pic_unmask_irq(unsigned char irq)
+{
+    unsigned short port;
+    unsigned char mask;
+
+    if (irq < 8)
+    {
+        port = PIC1_DATA;
+    }
+    else
+    {
+        port = PIC2_DATA;
+        irq -= 8;
+    }
+
+    mask = inb(port);
+    mask &= ~(1 << irq);
+
+    outb(port, mask);
 }

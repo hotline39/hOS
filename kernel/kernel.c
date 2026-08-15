@@ -2,6 +2,11 @@
 #include "gdt.h"
 #include "idt.h"
 #include "pic.h"
+#include "timer.h"
+#include "keyboard.h"
+#include "shell.h"
+#include "pmm.h"
+#include "paging.h"
 
 void kernel_main(void)
 {
@@ -17,10 +22,26 @@ void kernel_main(void)
     vga_write("GDT initialized!\n");
 
     idt_init();
-    vga_write("IDT initialized!\n");
 
     pic_remap();
     vga_write("PIC remapped!\n");
+
+    timer_init(100);
+
+    keyboard_init();
+
+    pmm_init();
+
+    paging_init();
+
+    pic_unmask_irq(0);
+    pic_unmask_irq(1);
+
+    __asm__ volatile ("sti");
+
+    vga_write("Interrupts enabled!\n");
+
+    shell_init();
 
     while (1)
     {

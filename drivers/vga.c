@@ -1,103 +1,138 @@
 #include "vga.h"
 
-#define VGA_MEMORY ((volatile uint16_t*)0xB8000)
+#define VGA_MEMORY ((volatile unsigned short*)0xB8000)
 
 #define VGA_WIDTH 80
 #define VGA_HEIGHT 25
 
-static uint8_t color = 0x07;
-static uint8_t cursor_x = 0;
-static uint8_t cursor_y = 0;
+static unsigned int cursor_row = 0;
+static unsigned int cursor_col = 0;
 
-static uint16_t vga_entry(char c)
+static unsigned char color = 0x07;
+
+static void vga_scroll(void)
 {
-    return ((uint16_t)color << 8) | (uint8_t)c;
+    if (cursor_row < VGA_HEIGHT)
+    {
+        return;
+    }
+
+    for (unsigned int row = 1; row < VGA_HEIGHT; row++)
+    {
+        for (unsigned int col = 0; col < VGA_WIDTH; col++)
+        {
+            VGA_MEMORY[(row - 1) * VGA_WIDTH + col] =
+                VGA_MEMORY[row * VGA_WIDTH + col];
+        }
+    }
+
+    for (unsigned int col = 0; col < VGA_WIDTH; col++)
+    {
+        VGA_MEMORY[(VGA_HEIGHT - 1) * VGA_WIDTH + col] =
+            ((unsigned short)color << 8) | ' ';
+    }
+
+    cursor_row = VGA_HEIGHT - 1;
+}
+
+static void vga_update_cursor(void)
+{
+    unsigned short position;
+
+    position = cursor_row * VGA_WIDTH + cursor_col;
+
+    __asm__ volatile (
+        "movb $0x0F, %%al\n"
+        "outb %%al, $0x3D4\n"
+        "movb %b0, %%al\n"
+        "outb %%al, $0x3D5\n"
+        "movb $0x0E, %%al\n"
+        "outb %%al, $0x3D4\n"
+        "movb %b1, %%al\n"
+        "outb %%al, $0x3D5\n"
+        :
+        : "q"((unsigned char)(position & 0xFF)),
+          "q"((unsigned char)((position >> 8) & 0xFF))
+        : "eax"
+    );
 }
 
 void vga_init(void)
 {
-    vga_clear();
-}
+    cursor_row = 0;
+    cursor_col = 0;
 
-void vga_clear(void)
-{
-    for (uint32_t y = 0; y < VGA_HEIGHT; y++)
+    for (unsigned int i = 0; i < VGA_WIDTH * VGA_HEIGHT; i++)
     {
-        for (uint32_t x = 0; x < VGA_WIDTH; x++)
-        {
-            VGA_MEMORY[y * VGA_WIDTH + x] = vga_entry(' ');
-        }
+        VGA_MEMORY[i] =
+            ((unsigned short)color << 8) | ' ';
     }
 
-    cursor_x = 0;
-    cursor_y = 0;
+    vga_update_cursor();
 }
 
-void vga_put_char(char c)
+void vga_putc(char c)
 {
     if (c == '\n')
     {
-        cursor_x = 0;
-        cursor_y++;
+        cursor_col = 0;
+        cursor_row++;
+
+        vga_scroll();
+        vga_update_cursor();
+
+        return;
+    }
+
+    if (c == '\b')
+    {
+        vga_backspace();
+        return;
+    }
+
+    VGA_MEMORY[cursor_row * VGA_WIDTH + cursor_col] =
+        ((unsigned short)color << 8) | (unsigned char)c;
+
+    cursor_col++;
+
+    if (cursor_col >= VGA_WIDTH)
+    {
+        cursor_col = 0;
+        cursor_row++;
+    }
+
+    vga_scroll();
+    vga_update_cursor();
+}
+
+void vga_backspace(void)
+{
+    if (cursor_col == 0)
+    {
+        if (cursor_row == 0)
+        {
+            return;
+        }
+
+        cursor_row--;
+        cursor_col = VGA_WIDTH - 1;
     }
     else
     {
-        VGA_MEMORY[cursor_y * VGA_WIDTH + cursor_x] = vga_entry(c);
-        cursor_x++;
-
-        if (cursor_x >= VGA_WIDTH)
-        {
-            cursor_x = 0;
-            cursor_y++;
-        }
+        cursor_col--;
     }
 
-    if (cursor_y >= VGA_HEIGHT)
-    {
-        cursor_y = 0;
-    }
+    VGA_MEMORY[cursor_row * VGA_WIDTH + cursor_col] =
+        ((unsigned short)color << 8) | ' ';
+
+    vga_update_cursor();
 }
 
 void vga_write(const char* str)
 {
     while (*str)
     {
-        vga_put_char(*str);
+        vga_putc(*str);
         str++;
-    }
-}
-
-void vga_write_hex(uint32_t value)
-{
-    const char* hex = "0123456789ABCDEF";
-
-    vga_write("0x");
-
-    for (int i = 7; i >= 0; i--)
-    {
-        vga_put_char(hex[(value >> (i * 4)) & 0xF]);
-    }
-}
-
-void vga_write_dec(uint32_t value)
-{
-    char buffer[11];
-    int i = 0;
-
-    if (value == 0)
-    {
-        vga_put_char('0');
-        return;
-    }
-
-    while (value > 0)
-    {
-        buffer[i++] = '0' + (value % 10);
-        value /= 10;
-    }
-
-    while (i > 0)
-    {
-        vga_put_char(buffer[--i]);
     }
 }
