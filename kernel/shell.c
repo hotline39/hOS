@@ -1,7 +1,6 @@
 #include "shell.h"
 #include "vga.h"
-#include "heap.h"
-#include "process.h"
+#include "ramfs.h"
 
 #define SHELL_BUFFER_SIZE 128
 
@@ -38,6 +37,16 @@ static int string_starts_with(const char* str, const char* prefix)
     return 1;
 }
 
+static unsigned int string_length(const char *str)
+{
+    unsigned int length = 0;
+
+    while (str[length] != '\0')
+        length++;
+
+    return length;
+}
+
 static void shell_prompt(void)
 {
     vga_write("hOS> ");
@@ -51,12 +60,14 @@ static void shell_clear(void)
 static void shell_help(void)
 {
     vga_write("Available commands:\n");
-    vga_write("  help    - show this help\n");
-    vga_write("  clear   - clear the screen\n");
-    vga_write("  echo    - print text\n");
-    vga_write("  info    - show system information\n");
-    vga_write("  heap    - test kernel heap\n");
-    vga_write("  process - create a process\n");
+    vga_write("  help  - show this help\n");
+    vga_write("  clear - clear the screen\n");
+    vga_write("  echo  - print text\n");
+    vga_write("  info  - show system information\n");
+    vga_write("  ls    - list files\n");
+    vga_write("  touch - create file\n");
+    vga_write("  cat   - read file\n");
+    vga_write("  write - write file\n");
 }
 
 static void shell_info(void)
@@ -66,53 +77,135 @@ static void shell_info(void)
     vga_write("Interrupts: PIC / IRQ\n");
     vga_write("Timer: PIT\n");
     vga_write("Keyboard: PS/2\n");
+    vga_write("Filesystem: RAM FS\n");
 }
 
-static void shell_heap(void)
+static void shell_ls(void)
 {
-    void *a;
-    void *b;
+    ramfs_list();
+}
 
-    a = kmalloc(64);
-    b = kmalloc(128);
+static void shell_touch(const char *args)
+{
+    unsigned int i = 0;
+    char filename[RAMFS_FILENAME_SIZE];
 
-    if (a == 0 || b == 0)
+    while (args[i] != '\0' && args[i] != ' ')
     {
-        vga_write("Heap allocation failed!\n");
+        if (i >= RAMFS_FILENAME_SIZE - 1)
+        {
+            vga_write("Filename too long.\n");
+            return;
+        }
+
+        filename[i] = args[i];
+        i++;
+    }
+
+    filename[i] = '\0';
+
+    if (filename[0] == '\0' || args[i] != '\0')
+    {
+        vga_write("Usage: touch <file>\n");
         return;
     }
 
-    vga_write("Heap allocation OK\n");
-
-    kfree(a);
-    kfree(b);
-
-    vga_write("Heap free OK\n");
-}
-
-static void shell_process(void)
-{
-    process_t *process;
-
-    process = process_create();
-
-    if (process == 0)
+    if (ramfs_create(filename) == 0)
     {
-        vga_write("Process creation failed!\n");
-        return;
+        vga_write("File created.\n");
     }
-
-    vga_write("Process created!\n");
-    vga_write("PID: ");
-
-    if (process->pid == 1)
-        vga_write("1\n");
-    else if (process->pid == 2)
-        vga_write("2\n");
-    else if (process->pid == 3)
-        vga_write("3\n");
     else
-        vga_write("other\n");
+    {
+        vga_write("Failed to create file.\n");
+    }
+}
+
+static void shell_cat(const char *args)
+{
+    unsigned int i = 0;
+    char filename[RAMFS_FILENAME_SIZE];
+    const char *data;
+
+    while (args[i] != '\0' && args[i] != ' ')
+    {
+        if (i >= RAMFS_FILENAME_SIZE - 1)
+        {
+            vga_write("Filename too long.\n");
+            return;
+        }
+
+        filename[i] = args[i];
+        i++;
+    }
+
+    filename[i] = '\0';
+
+    if (filename[0] == '\0' || args[i] != '\0')
+    {
+        vga_write("Usage: cat <file>\n");
+        return;
+    }
+
+    data = ramfs_read(filename);
+
+    if (data == 0)
+    {
+        vga_write("File not found.\n");
+        return;
+    }
+
+    vga_write(data);
+    vga_putc('\n');
+}
+
+static void shell_write(const char *args)
+{
+    unsigned int i = 0;
+    unsigned int filename_length = 0;
+    char filename[RAMFS_FILENAME_SIZE];
+    const char *data;
+
+    while (args[i] != '\0' && args[i] != ' ')
+        i++;
+
+    filename_length = i;
+
+    if (filename_length == 0 || args[i] == '\0')
+    {
+        vga_write("Usage: write <file> <text>\n");
+        return;
+    }
+
+    if (filename_length >= RAMFS_FILENAME_SIZE)
+    {
+        vga_write("Filename too long.\n");
+        return;
+    }
+
+    while (i > 0)
+    {
+        filename[i - 1] = args[i - 1];
+        i--;
+    }
+
+    filename[filename_length] = '\0';
+
+    data = args + filename_length + 1;
+
+    if (*data == '\0')
+    {
+        vga_write("Usage: write <file> <text>\n");
+        return;
+    }
+
+    if (ramfs_write(filename, data) == 0)
+    {
+        vga_write("File written.\n");
+    }
+    else
+    {
+        vga_write("File not found.\n");
+    }
 }
 
 void shell_init(void)
@@ -147,9 +240,7 @@ void shell_putchar(char c)
     }
 
     if (buffer_length >= SHELL_BUFFER_SIZE - 1)
-    {
         return;
-    }
 
     buffer[buffer_length++] = c;
     buffer[buffer_length] = '\0';
@@ -177,13 +268,33 @@ void shell_execute(void)
     {
         shell_info();
     }
-    else if (string_equal(buffer, "heap"))
+    else if (string_equal(buffer, "ls"))
     {
-        shell_heap();
+        shell_ls();
     }
-    else if (string_equal(buffer, "process"))
+    else if (string_equal(buffer, "touch"))
     {
-        shell_process();
+        vga_write("Usage: touch <file>\n");
+    }
+    else if (string_starts_with(buffer, "touch "))
+    {
+        shell_touch(buffer + 6);
+    }
+    else if (string_equal(buffer, "cat"))
+    {
+        vga_write("Usage: cat <file>\n");
+    }
+    else if (string_starts_with(buffer, "cat "))
+    {
+        shell_cat(buffer + 4);
+    }
+    else if (string_equal(buffer, "write"))
+    {
+        vga_write("Usage: write <file> <text>\n");
+    }
+    else if (string_starts_with(buffer, "write "))
+    {
+        shell_write(buffer + 6);
     }
     else if (string_starts_with(buffer, "echo "))
     {

@@ -90,6 +90,18 @@ $(BUILD)/context_switch.o: kernel/context_switch.asm | $(BUILD)
 $(BUILD)/scheduler.o: kernel/scheduler.c | $(BUILD)
 	$(CC) $(CFLAGS) -Iinclude -c $< -o $@
 
+$(BUILD)/ramfs.o: kernel/ramfs.c | $(BUILD)
+	$(CC) $(CFLAGS) -Iinclude -c $< -o $@
+
+$(BUILD)/fat12.o: kernel/fat12.c | $(BUILD)
+	$(CC) $(CFLAGS) -Iinclude -c $< -o $@
+
+fat12.img: tools/mkfat12.py
+	python3 tools/mkfat12.py
+
+$(BUILD)/fat12_img.o: fat12.img | $(BUILD)
+	objcopy -I binary -O elf32-i386 -B i386 $< $@
+
 $(KERNEL): \
 	$(BUILD)/boot.o \
 	$(BUILD)/kernel.o \
@@ -108,6 +120,9 @@ $(KERNEL): \
 	$(BUILD)/process.o \
 	$(BUILD)/context_switch.o \
 	$(BUILD)/scheduler.o \
+	$(BUILD)/ramfs.o \
+	$(BUILD)/fat12.o \
+	$(BUILD)/fat12_img.o \
 	$(BUILD)/idt_load.o \
 	$(BUILD)/isr.o
 	$(LD) $(LDFLAGS) -o $@ $^

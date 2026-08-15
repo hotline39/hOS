@@ -10,6 +10,8 @@
 #include "heap.h"
 #include "process.h"
 #include "scheduler.h"
+#include "ramfs.h"
+#include "fat12.h"
 
 void kernel_main(void)
 {
@@ -50,6 +52,13 @@ void kernel_main(void)
     process_init();
 
     scheduler_init();
+
+    ramfs_init();
+
+    fat12_init();
+
+    pic_unmask_irq(0);
+    pic_unmask_irq(1);
 
     __asm__ volatile ("sti");
 

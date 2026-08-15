@@ -3,6 +3,7 @@
 #include "pic.h"
 #include "timer.h"
 #include "keyboard.h"
+#include "scheduler.h"
 
 static const char* exception_messages[] =
 {
@@ -28,7 +29,6 @@ static const char* exception_messages[] =
     "SIMD Floating Point",
     "Virtualization",
     "Control Protection",
-    "Reserved",
     "Reserved",
     "Reserved",
     "Reserved",
@@ -63,16 +63,26 @@ void exception_handler(unsigned int number)
     }
 }
 
-void irq_handler(unsigned int irq)
+unsigned int irq_handler(unsigned int irq, unsigned int current_esp)
 {
+    unsigned int next_esp;
+
     if (irq == 0)
     {
         timer_handler();
+        next_esp = scheduler_tick(current_esp);
     }
-    else if (irq == 1)
+    else
     {
-        keyboard_handler();
+        next_esp = current_esp;
+
+        if (irq == 1)
+        {
+            keyboard_handler();
+        }
     }
 
     pic_send_eoi((unsigned char)irq);
+
+    return next_esp;
 }

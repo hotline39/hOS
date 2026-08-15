@@ -24,6 +24,6 @@ void process_init(void);
 process_t *process_create(void);
 void process_add(process_t *process);
 process_t *process_next(void);
-void process_switch(process_t *current, process_t *next);
+process_t *process_current(void);
 
 #endif

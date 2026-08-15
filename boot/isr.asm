@@ -25,11 +25,6 @@ global irq15
 extern exception_handler
 extern irq_handler
 
-
-; ==============================
-; CPU Exceptions
-; ==============================
-
 isr0:
     cli
     pushad
@@ -41,7 +36,6 @@ isr0:
     popad
     sti
     iretd
-
 
 isr6:
     cli
@@ -55,7 +49,6 @@ isr6:
     sti
     iretd
 
-
 isr13:
     cli
     pushad
@@ -67,7 +60,6 @@ isr13:
     popad
     sti
     iretd
-
 
 isr14:
     cli
@@ -81,214 +73,257 @@ isr14:
     sti
     iretd
 
-
-; ==============================
-; Hardware IRQs
-; ==============================
-
 irq0:
     cli
     pushad
 
+    push esp
     push 0
     call irq_handler
-    add esp, 4
+    add esp, 8
+
+    mov esp, eax
 
     popad
     sti
     iretd
-
 
 irq1:
     cli
     pushad
 
+    mov eax, esp
+
+    push eax
     push 1
     call irq_handler
-    add esp, 4
+    add esp, 8
+
+    mov esp, eax
 
     popad
-    sti
     iretd
-
 
 irq2:
     cli
     pushad
 
+    mov eax, esp
+
+    push eax
     push 2
     call irq_handler
-    add esp, 4
+    add esp, 8
+
+    mov esp, eax
 
     popad
-    sti
     iretd
-
 
 irq3:
     cli
     pushad
 
+    mov eax, esp
+
+    push eax
     push 3
     call irq_handler
-    add esp, 4
+    add esp, 8
+
+    mov esp, eax
 
     popad
-    sti
     iretd
-
 
 irq4:
     cli
     pushad
 
+    mov eax, esp
+
+    push eax
     push 4
     call irq_handler
-    add esp, 4
+    add esp, 8
+
+    mov esp, eax
 
     popad
-    sti
     iretd
-
 
 irq5:
     cli
     pushad
 
+    mov eax, esp
+
+    push eax
     push 5
     call irq_handler
-    add esp, 4
+    add esp, 8
+
+    mov esp, eax
 
     popad
-    sti
     iretd
-
 
 irq6:
     cli
     pushad
 
+    mov eax, esp
+
+    push eax
     push 6
     call irq_handler
-    add esp, 4
+    add esp, 8
+
+    mov esp, eax
 
     popad
-    sti
     iretd
-
 
 irq7:
     cli
     pushad
 
+    mov eax, esp
+
+    push eax
     push 7
     call irq_handler
-    add esp, 4
+    add esp, 8
+
+    mov esp, eax
 
     popad
-    sti
     iretd
-
 
 irq8:
     cli
     pushad
 
+    mov eax, esp
+
+    push eax
     push 8
     call irq_handler
-    add esp, 4
+    add esp, 8
+
+    mov esp, eax
 
     popad
-    sti
     iretd
-
 
 irq9:
     cli
     pushad
 
+    mov eax, esp
+
+    push eax
     push 9
     call irq_handler
-    add esp, 4
+    add esp, 8
+
+    mov esp, eax
 
     popad
-    sti
     iretd
-
 
 irq10:
     cli
     pushad
 
+    mov eax, esp
+
+    push eax
     push 10
     call irq_handler
-    add esp, 4
+    add esp, 8
+
+    mov esp, eax
 
     popad
-    sti
     iretd
-
 
 irq11:
     cli
     pushad
 
+    mov eax, esp
+
+    push eax
     push 11
     call irq_handler
-    add esp, 4
+    add esp, 8
+
+    mov esp, eax
 
     popad
-    sti
     iretd
-
 
 irq12:
     cli
     pushad
 
+    mov eax, esp
+
+    push eax
     push 12
     call irq_handler
-    add esp, 4
+    add esp, 8
+
+    mov esp, eax
 
     popad
-    sti
     iretd
-
 
 irq13:
     cli
     pushad
 
+    mov eax, esp
+
+    push eax
     push 13
     call irq_handler
-    add esp, 4
+    add esp, 8
+
+    mov esp, eax
 
     popad
-    sti
     iretd
-
 
 irq14:
     cli
     pushad
 
+    mov eax, esp
+
+    push eax
     push 14
     call irq_handler
-    add esp, 4
+    add esp, 8
+
+    mov esp, eax
 
     popad
-    sti
     iretd
-
 
 irq15:
     cli
     pushad
 
+    mov eax, esp
+
+    push eax
     push 15
     call irq_handler
-    add esp, 4
+    add esp, 8
+
+    mov esp, eax
 
     popad
-    sti
     iretd

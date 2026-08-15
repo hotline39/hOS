@@ -1,5 +1,4 @@
 #include "timer.h"
-#include "vga.h"
 
 #define PIT_COMMAND 0x43
 #define PIT_CHANNEL0 0x40
