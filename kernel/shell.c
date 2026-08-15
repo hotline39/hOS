@@ -1,5 +1,7 @@
 #include "shell.h"
 #include "vga.h"
+#include "heap.h"
+#include "process.h"
 
 #define SHELL_BUFFER_SIZE 128
 
@@ -49,10 +51,12 @@ static void shell_clear(void)
 static void shell_help(void)
 {
     vga_write("Available commands:\n");
-    vga_write("  help  - show this help\n");
-    vga_write("  clear - clear the screen\n");
-    vga_write("  echo  - print text\n");
-    vga_write("  info  - show system information\n");
+    vga_write("  help    - show this help\n");
+    vga_write("  clear   - clear the screen\n");
+    vga_write("  echo    - print text\n");
+    vga_write("  info    - show system information\n");
+    vga_write("  heap    - test kernel heap\n");
+    vga_write("  process - create a process\n");
 }
 
 static void shell_info(void)
@@ -62,6 +66,53 @@ static void shell_info(void)
     vga_write("Interrupts: PIC / IRQ\n");
     vga_write("Timer: PIT\n");
     vga_write("Keyboard: PS/2\n");
+}
+
+static void shell_heap(void)
+{
+    void *a;
+    void *b;
+
+    a = kmalloc(64);
+    b = kmalloc(128);
+
+    if (a == 0 || b == 0)
+    {
+        vga_write("Heap allocation failed!\n");
+        return;
+    }
+
+    vga_write("Heap allocation OK\n");
+
+    kfree(a);
+    kfree(b);
+
+    vga_write("Heap free OK\n");
+}
+
+static void shell_process(void)
+{
+    process_t *process;
+
+    process = process_create();
+
+    if (process == 0)
+    {
+        vga_write("Process creation failed!\n");
+        return;
+    }
+
+    vga_write("Process created!\n");
+    vga_write("PID: ");
+
+    if (process->pid == 1)
+        vga_write("1\n");
+    else if (process->pid == 2)
+        vga_write("2\n");
+    else if (process->pid == 3)
+        vga_write("3\n");
+    else
+        vga_write("other\n");
 }
 
 void shell_init(void)
@@ -125,6 +176,14 @@ void shell_execute(void)
     else if (string_equal(buffer, "info"))
     {
         shell_info();
+    }
+    else if (string_equal(buffer, "heap"))
+    {
+        shell_heap();
+    }
+    else if (string_equal(buffer, "process"))
+    {
+        shell_process();
     }
     else if (string_starts_with(buffer, "echo "))
     {

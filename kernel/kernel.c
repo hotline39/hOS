@@ -7,6 +7,9 @@
 #include "shell.h"
 #include "pmm.h"
 #include "paging.h"
+#include "heap.h"
+#include "process.h"
+#include "scheduler.h"
 
 void kernel_main(void)
 {
@@ -22,20 +25,31 @@ void kernel_main(void)
     vga_write("GDT initialized!\n");
 
     idt_init();
+    vga_write("IDT initialized!\n");
 
     pic_remap();
     vga_write("PIC remapped!\n");
 
     timer_init(100);
+    vga_write("Timer initialized!\n");
 
     keyboard_init();
+    vga_write("Keyboard initialized!\n");
 
     pmm_init();
+    vga_write("Physical memory initialized!\n");
 
     paging_init();
+    vga_write("Paging initialized!\n");
 
+    heap_init();
+    
     pic_unmask_irq(0);
     pic_unmask_irq(1);
+
+    process_init();
+
+    scheduler_init();
 
     __asm__ volatile ("sti");
 

@@ -78,6 +78,18 @@ $(BUILD)/pmm.o: kernel/pmm.c | $(BUILD)
 $(BUILD)/paging.o: kernel/paging.c | $(BUILD)
 	$(CC) $(CFLAGS) -Iinclude -c $< -o $@
 
+$(BUILD)/heap.o: kernel/heap.c | $(BUILD)
+	$(CC) $(CFLAGS) -Iinclude -c $< -o $@
+
+$(BUILD)/process.o: kernel/process.c | $(BUILD)
+	$(CC) $(CFLAGS) -Iinclude -c $< -o $@
+
+$(BUILD)/context_switch.o: kernel/context_switch.asm | $(BUILD)
+	nasm -f elf32 $< -o $@
+
+$(BUILD)/scheduler.o: kernel/scheduler.c | $(BUILD)
+	$(CC) $(CFLAGS) -Iinclude -c $< -o $@
+
 $(KERNEL): \
 	$(BUILD)/boot.o \
 	$(BUILD)/kernel.o \
@@ -92,6 +104,10 @@ $(KERNEL): \
 	$(BUILD)/shell.o \
 	$(BUILD)/pmm.o \
 	$(BUILD)/paging.o \
+	$(BUILD)/heap.o \
+	$(BUILD)/process.o \
+	$(BUILD)/context_switch.o \
+	$(BUILD)/scheduler.o \
 	$(BUILD)/idt_load.o \
 	$(BUILD)/isr.o
 	$(LD) $(LDFLAGS) -o $@ $^
