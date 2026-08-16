@@ -5,6 +5,8 @@ global isr6
 global isr13
 global isr14
 
+global syscall_isr
+
 global irq0
 global irq1
 global irq2
@@ -24,6 +26,7 @@ global irq15
 
 extern exception_handler
 extern irq_handler
+extern syscall_handler
 
 isr0:
     cli
@@ -324,6 +327,15 @@ irq15:
     add esp, 8
 
     mov esp, eax
+
+    popad
+    iretd
+
+syscall_isr:
+    cli
+    pushad
+
+    call syscall_handler
 
     popad
     iretd

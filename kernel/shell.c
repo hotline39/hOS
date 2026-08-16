@@ -1,6 +1,7 @@
 #include "shell.h"
 #include "vga.h"
 #include "ramfs.h"
+#include "fat12.h"
 
 #define SHELL_BUFFER_SIZE 128
 
@@ -57,6 +58,33 @@ static void shell_clear(void)
     vga_init();
 }
 
+static void shell_fatls(void)
+{
+    fat12_list();
+}
+
+static void shell_fatcat(const char *args)
+{
+    const char *data;
+
+    if (args[0] == '\0')
+    {
+        vga_write("Usage: fatcat <file>\n");
+        return;
+    }
+
+    data = fat12_read(args);
+
+    if (data == 0)
+    {
+        vga_write("File not found.\n");
+        return;
+    }
+
+    vga_write(data);
+    vga_putc('\n');
+}
+
 static void shell_help(void)
 {
     vga_write("Available commands:\n");
@@ -68,6 +96,8 @@ static void shell_help(void)
     vga_write("  touch - create file\n");
     vga_write("  cat   - read file\n");
     vga_write("  write - write file\n");
+    vga_write(" fatls - list FAT12 files\n");
+    vga_write(" fatcat - read FAT12 file\n");
 }
 
 static void shell_info(void)
@@ -304,6 +334,18 @@ void shell_execute(void)
     else if (string_equal(buffer, "echo"))
     {
         vga_putc('\n');
+    }
+    else if (string_equal(buffer, "fatls"))
+    {
+        shell_fatls();
+    }
+    else if (string_equal(buffer, "fatcat"))
+    {
+        vga_write("Usage: fatcat <file>\n");
+    }
+    else if (string_starts_with(buffer, "fatcat "))
+    {
+        shell_fatcat(buffer + 7);
     }
     else
     {

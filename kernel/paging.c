@@ -47,47 +47,28 @@ void paging_init(void)
 {
     unsigned int i;
 
-    /*
-     * Page Directory 초기화
-     */
     for (i = 0; i < PAGE_TABLE_SIZE; i++)
     {
         page_directory[i] = 0;
     }
 
-    /*
-     * 첫 번째 Page Table 생성
-     *
-     * 0x00000000 ~ 0x003FFFFF
-     * 를 identity mapping 한다.
-     */
     for (i = 0; i < PAGE_TABLE_SIZE; i++)
     {
         first_page_table[i] =
             (i * PAGE_SIZE) |
             PAGE_PRESENT |
-            PAGE_WRITABLE;
+            PAGE_WRITABLE |
+            PAGE_USER;
     }
 
-    /*
-     * Page Directory의 첫 번째 항목이
-     * 첫 번째 Page Table을 가리키도록 한다.
-     */
     page_directory[0] =
         ((unsigned int)first_page_table) |
         PAGE_PRESENT |
-        PAGE_WRITABLE;
+        PAGE_WRITABLE |
+        PAGE_USER;
 
-    /*
-     * CR3에 Page Directory 주소 등록
-     */
     load_page_directory((unsigned int)page_directory);
 
-    /*
-     * CR0.PG = 1
-     *
-     * Paging 활성화
-     */
     enable_paging();
 
     vga_write("Paging enabled!\n");

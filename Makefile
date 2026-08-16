@@ -102,6 +102,18 @@ fat12.img: tools/mkfat12.py
 $(BUILD)/fat12_img.o: fat12.img | $(BUILD)
 	objcopy -I binary -O elf32-i386 -B i386 $< $@
 
+$(BUILD)/syscall.o: kernel/syscall.c | $(BUILD)
+	$(CC) $(CFLAGS) -Iinclude -c $< -o $@
+
+$(BUILD)/user.o: kernel/user.c | $(BUILD)
+	$(CC) $(CFLAGS) -Iinclude -c $< -o $@
+
+$(BUILD)/user_asm.o: kernel/user.asm | $(BUILD)
+	nasm -f elf32 $< -o $@
+
+$(BUILD)/elf.o: kernel/elf.c | $(BUILD)
+	$(CC) $(CFLAGS) -Iinclude -c $< -o $@
+
 $(KERNEL): \
 	$(BUILD)/boot.o \
 	$(BUILD)/kernel.o \
@@ -123,6 +135,10 @@ $(KERNEL): \
 	$(BUILD)/ramfs.o \
 	$(BUILD)/fat12.o \
 	$(BUILD)/fat12_img.o \
+	$(BUILD)/syscall.o \
+	$(BUILD)/user.o \
+	$(BUILD)/user_asm.o \
+	$(BUILD)/elf.o \
 	$(BUILD)/idt_load.o \
 	$(BUILD)/isr.o
 	$(LD) $(LDFLAGS) -o $@ $^

@@ -12,6 +12,9 @@
 #include "scheduler.h"
 #include "ramfs.h"
 #include "fat12.h"
+#include "user.h"
+
+extern void enter_user_mode(void);
 
 void kernel_main(void)
 {
@@ -45,7 +48,7 @@ void kernel_main(void)
     vga_write("Paging initialized!\n");
 
     heap_init();
-    
+
     pic_unmask_irq(0);
     pic_unmask_irq(1);
 
@@ -65,6 +68,8 @@ void kernel_main(void)
     vga_write("Interrupts enabled!\n");
 
     shell_init();
+
+    enter_user_mode();
 
     while (1)
     {
