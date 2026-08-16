@@ -10,6 +10,15 @@ static unsigned int cursor_col = 0;
 
 static unsigned char color = 0x07;
 
+static inline void outb(unsigned short port, unsigned char value)
+{
+    __asm__ volatile (
+        "outb %0, %1"
+        :
+        : "a"(value), "Nd"(port)
+    );
+}
+
 static void vga_scroll(void)
 {
     if (cursor_row < VGA_HEIGHT)
@@ -41,20 +50,11 @@ static void vga_update_cursor(void)
 
     position = cursor_row * VGA_WIDTH + cursor_col;
 
-    __asm__ volatile (
-        "movb $0x0F, %%al\n"
-        "outb %%al, $0x3D4\n"
-        "movb %b0, %%al\n"
-        "outb %%al, $0x3D5\n"
-        "movb $0x0E, %%al\n"
-        "outb %%al, $0x3D4\n"
-        "movb %b1, %%al\n"
-        "outb %%al, $0x3D5\n"
-        :
-        : "q"((unsigned char)(position & 0xFF)),
-          "q"((unsigned char)((position >> 8) & 0xFF))
-        : "eax"
-    );
+    outb(0x3D4, 0x0F);
+    outb(0x3D5, (unsigned char)(position & 0xFF));
+
+    outb(0x3D4, 0x0E);
+    outb(0x3D5, (unsigned char)((position >> 8) & 0xFF));
 }
 
 void vga_init(void)

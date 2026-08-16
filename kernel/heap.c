@@ -1,8 +1,8 @@
 #include "heap.h"
 #include "vga.h"
 
-#define HEAP_START 0x00300000
-#define HEAP_END   0x00400000
+#define HEAP_START 0x00400000
+#define HEAP_END   0x00500000
 
 static unsigned int heap_current;
 

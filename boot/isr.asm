@@ -4,8 +4,8 @@ global isr0
 global isr6
 global isr13
 global isr14
+global isr128
 
-global syscall_isr
 
 global irq0
 global irq1
@@ -27,6 +27,7 @@ global irq15
 extern exception_handler
 extern irq_handler
 extern syscall_handler
+extern exception_handler_debug
 
 isr0:
     cli
@@ -37,7 +38,6 @@ isr0:
     add esp, 4
 
     popad
-    sti
     iretd
 
 isr6:
@@ -56,13 +56,25 @@ isr13:
     cli
     pushad
 
-    push 13
-    call exception_handler
-    add esp, 4
+    mov eax, [esp + 32]
+    mov ebx, [esp + 36]
+    mov ecx, [esp + 40]
+    mov edx, [esp + 44]
 
-    popad
-    sti
-    iretd
+    push edx
+    push ecx
+    push ebx
+    push eax
+    push 13
+
+    call exception_handler_debug
+
+    add esp, 20
+
+.halt:
+    cli
+    hlt
+    jmp .halt
 
 isr14:
     cli
@@ -331,11 +343,11 @@ irq15:
     popad
     iretd
 
-syscall_isr:
+isr128:
     cli
     pushad
-
+    push esp
     call syscall_handler
-
+    add esp, 4
     popad
     iretd

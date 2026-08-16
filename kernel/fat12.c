@@ -20,30 +20,13 @@ static unsigned int read32(const unsigned char *p)
            ((unsigned int)p[3] << 24);
 }
 
-static int string_equal(const char *a, const char *b)
-{
-    unsigned int i = 0;
-
-    while (a[i] != '\0' && b[i] != '\0')
-    {
-        if (a[i] != b[i])
-            return 0;
-
-        i++;
-    }
-
-    return a[i] == '\0' && b[i] == '\0';
-}
-
 static void make_fat_name(const char *input, char *output)
 {
     unsigned int i = 0;
     unsigned int j = 0;
 
     while (input[i] != '\0' && input[i] != '.' && j < 8)
-    {
         output[j++] = input[i++];
-    }
 
     while (j < 8)
         output[j++] = ' ';
@@ -65,8 +48,10 @@ static unsigned short fat12_next_cluster(unsigned short cluster)
     unsigned int offset;
     unsigned int value;
 
-    offset = fs.fat_start * fs.bytes_per_sector +
-             cluster + (cluster / 2);
+    offset =
+        fs.fat_start * fs.bytes_per_sector +
+        cluster +
+        (cluster / 2);
 
     value = read16(fs.image + offset);
 
@@ -82,8 +67,9 @@ static unsigned char *cluster_address(unsigned short cluster)
 {
     unsigned int sector;
 
-    sector = fs.data_start +
-             ((cluster - 2) * fs.sectors_per_cluster);
+    sector =
+        fs.data_start +
+        ((cluster - 2) * fs.sectors_per_cluster);
 
     return fs.image + sector * fs.bytes_per_sector;
 }
@@ -95,10 +81,11 @@ void fat12_init(void)
     fs.image = 0;
     fs.image_size = 0;
 
-    size = (unsigned int)(
-        _binary_fat12_img_end -
-        _binary_fat12_img_start
-    );
+    size =
+        (unsigned int)(
+            _binary_fat12_img_end -
+            _binary_fat12_img_start
+        );
 
     if (fat12_mount(_binary_fat12_img_start, size) == 0)
         vga_write("FAT12 mounted!\n");
@@ -126,7 +113,6 @@ int fat12_mount(unsigned char *image, unsigned int image_size)
     fs.reserved_sectors = read16(boot + 14);
     fs.fat_count = boot[16];
     fs.root_entries = read16(boot + 17);
-
     fs.total_sectors = read16(boot + 19);
 
     if (fs.total_sectors == 0)
@@ -150,8 +136,11 @@ int fat12_mount(unsigned char *image, unsigned int image_size)
 
     fs.data_start =
         fs.root_start +
-        ((fs.root_entries * 32 + fs.bytes_per_sector - 1) /
-         fs.bytes_per_sector);
+        (
+            (fs.root_entries * 32 +
+             fs.bytes_per_sector - 1) /
+            fs.bytes_per_sector
+        );
 
     return 0;
 }
@@ -172,9 +161,10 @@ void fat12_list(void)
 
     for (i = 0; i < root_size; i += 32)
     {
-        entry = fs.image +
-                fs.root_start * fs.bytes_per_sector +
-                i;
+        entry =
+            fs.image +
+            fs.root_start * fs.bytes_per_sector +
+            i;
 
         if (entry[0] == 0x00)
             break;
@@ -226,7 +216,7 @@ void fat12_list(void)
 
 const char *fat12_read(const char *name)
 {
-    static char buffer[4096];
+    static char buffer[65536];
 
     char fat_name[12];
 
@@ -248,9 +238,10 @@ const char *fat12_read(const char *name)
 
     for (i = 0; i < root_size; i += 32)
     {
-        entry = fs.image +
-                fs.root_start * fs.bytes_per_sector +
-                i;
+        entry =
+            fs.image +
+            fs.root_start * fs.bytes_per_sector +
+            i;
 
         if (entry[0] == 0x00)
             break;
@@ -284,26 +275,32 @@ const char *fat12_read(const char *name)
         cluster = read16(entry + 26);
         file_size = read32(entry + 28);
 
-        while (cluster >= 2 &&
-               cluster < 0xFF8 &&
-               copied < file_size &&
-               copied < sizeof(buffer) - 1)
+        if (file_size >= sizeof(buffer))
+            return 0;
+
+        while (
+            cluster >= 2 &&
+            cluster < 0xFF8 &&
+            copied < file_size
+        )
         {
             unsigned char *data;
             unsigned int bytes;
+            unsigned int j;
 
             data = cluster_address(cluster);
 
-            bytes = fs.sectors_per_cluster *
-                    fs.bytes_per_sector;
+            bytes =
+                fs.sectors_per_cluster *
+                fs.bytes_per_sector;
 
             if (bytes > file_size - copied)
                 bytes = file_size - copied;
 
-            if (bytes > sizeof(buffer) - 1 - copied)
-                bytes = sizeof(buffer) - 1 - copied;
+            if (bytes > sizeof(buffer) - copied)
+                return 0;
 
-            for (int j = 0; j < bytes; j++)
+            for (j = 0; j < bytes; j++)
                 buffer[copied + j] = data[j];
 
             copied += bytes;
@@ -311,7 +308,11 @@ const char *fat12_read(const char *name)
             cluster = fat12_next_cluster(cluster);
         }
 
-        buffer[copied] = '\0';
+        if (copied != file_size)
+            return 0;
+
+        if (copied < sizeof(buffer))
+            buffer[copied] = '\0';
 
         return buffer;
     }

@@ -114,6 +114,9 @@ $(BUILD)/user_asm.o: kernel/user.asm | $(BUILD)
 $(BUILD)/elf.o: kernel/elf.c | $(BUILD)
 	$(CC) $(CFLAGS) -Iinclude -c $< -o $@
 
+$(BUILD)/process_start.o: kernel/process_start.asm | $(BUILD)
+	nasm -f elf32 $< -o $@
+
 $(KERNEL): \
 	$(BUILD)/boot.o \
 	$(BUILD)/kernel.o \
@@ -139,6 +142,7 @@ $(KERNEL): \
 	$(BUILD)/user.o \
 	$(BUILD)/user_asm.o \
 	$(BUILD)/elf.o \
+	$(BUILD)/process_start.o \
 	$(BUILD)/idt_load.o \
 	$(BUILD)/isr.o
 	$(LD) $(LDFLAGS) -o $@ $^

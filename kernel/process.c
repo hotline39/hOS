@@ -2,19 +2,11 @@
 #include "heap.h"
 #include "vga.h"
 
-#define PROCESS_STACK_SIZE 4096
+#define PROCESS_KERNEL_STACK_SIZE 4096
 
 static unsigned int next_pid = 1;
 static process_t *process_head = 0;
 static process_t *current_process = 0;
-
-static void process_entry(void)
-{
-    while (1)
-    {
-        vga_write("P");
-    }
-}
 
 void process_init(void)
 {
@@ -25,7 +17,10 @@ void process_init(void)
     vga_write("Process subsystem initialized!\n");
 }
 
-process_t *process_create(void)
+process_t *process_create_user(
+    unsigned int entry,
+    unsigned int user_stack_top
+)
 {
     process_t *process;
     unsigned int *stack;
@@ -35,23 +30,31 @@ process_t *process_create(void)
     if (process == 0)
         return 0;
 
-    process->stack = kmalloc(PROCESS_STACK_SIZE);
+    process->kernel_stack = kmalloc(PROCESS_KERNEL_STACK_SIZE);
 
-    if (process->stack == 0)
+    if (process->kernel_stack == 0)
         return 0;
 
     process->pid = next_pid++;
     process->state = PROCESS_READY;
-    process->stack_size = PROCESS_STACK_SIZE;
-    process->ebp = (unsigned int)process->stack + PROCESS_STACK_SIZE;
-    process->eip = (unsigned int)process_entry;
+
+    process->kernel_stack_size = PROCESS_KERNEL_STACK_SIZE;
+    process->kernel_stack_top =
+        (unsigned int)process->kernel_stack +
+        PROCESS_KERNEL_STACK_SIZE;
+
+    process->user_stack_top = user_stack_top;
+
+    process->eip = entry;
     process->next = 0;
 
-    stack = (unsigned int *)((unsigned int)process->stack + PROCESS_STACK_SIZE);
+    stack = (unsigned int *)process->kernel_stack_top;
 
+    *(--stack) = 0x23;
+    *(--stack) = user_stack_top;
     *(--stack) = 0x202;
-    *(--stack) = 0x08;
-    *(--stack) = (unsigned int)process_entry;
+    *(--stack) = 0x1B;
+    *(--stack) = entry;
 
     *(--stack) = 0;
     *(--stack) = 0;

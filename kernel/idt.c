@@ -19,8 +19,6 @@ struct idt_ptr
 static struct idt_entry idt[256];
 static struct idt_ptr idtp;
 
-extern void syscall_isr(void);
-
 extern void idt_load(unsigned int);
 
 extern void isr0(void);
@@ -44,6 +42,7 @@ extern void irq12(void);
 extern void irq13(void);
 extern void irq14(void);
 extern void irq15(void);
+extern void isr128(void);
 
 static void idt_set_gate(
     unsigned char num,
@@ -76,7 +75,7 @@ void idt_init(void)
     idt_set_gate(6,  (unsigned int)isr6,  0x08, 0x8E);
     idt_set_gate(13, (unsigned int)isr13, 0x08, 0x8E);
     idt_set_gate(14, (unsigned int)isr14, 0x08, 0x8E);
-    idt_set_gate(128, (unsigned int)syscall_isr, 0x08, 0xEE);
+    idt_set_gate(128, (unsigned int)isr128, 0x08, 0xEE);
     /* Hardware IRQ 0~15 -> IDT 32~47 */
 
     idt_set_gate(32, (unsigned int)irq0,  0x08, 0x8E);

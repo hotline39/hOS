@@ -14,6 +14,9 @@ static unsigned int page_directory[PAGE_TABLE_SIZE]
 static unsigned int first_page_table[PAGE_TABLE_SIZE]
     __attribute__((aligned(PAGE_SIZE)));
 
+static unsigned int second_page_table[PAGE_TABLE_SIZE]
+    __attribute__((aligned(PAGE_SIZE)));
+
 static inline void load_page_directory(unsigned int address)
 {
     __asm__ volatile (
@@ -61,11 +64,24 @@ void paging_init(void)
             PAGE_USER;
     }
 
+    for (i = 0; i < PAGE_TABLE_SIZE; i++)
+    {
+        second_page_table[i] =
+            (0x00400000 + i * PAGE_SIZE) |
+            PAGE_PRESENT |
+            PAGE_WRITABLE;
+    }
+
     page_directory[0] =
         ((unsigned int)first_page_table) |
         PAGE_PRESENT |
         PAGE_WRITABLE |
         PAGE_USER;
+
+    page_directory[1] =
+        ((unsigned int)second_page_table) |
+        PAGE_PRESENT |
+        PAGE_WRITABLE;
 
     load_page_directory((unsigned int)page_directory);
 

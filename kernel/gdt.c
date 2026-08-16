@@ -155,3 +155,8 @@ void gdt_init(void)
 
     gdt_flush((unsigned int)&gp);
 }
+
+void tss_set_kernel_stack(unsigned int esp0)
+{
+    tss.esp0 = esp0;
+}

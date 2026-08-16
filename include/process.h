@@ -12,18 +12,30 @@ typedef struct process
 {
     unsigned int pid;
     process_state_t state;
-    void *stack;
-    unsigned int stack_size;
+
+    void *kernel_stack;
+    unsigned int kernel_stack_size;
+    unsigned int kernel_stack_top;
+
+    unsigned int user_stack_top;
+
     unsigned int esp;
-    unsigned int ebp;
     unsigned int eip;
+
     struct process *next;
 } process_t;
 
 void process_init(void);
-process_t *process_create(void);
+
+process_t *process_create_user(
+    unsigned int entry,
+    unsigned int user_stack_top
+);
+
 void process_add(process_t *process);
 process_t *process_next(void);
 process_t *process_current(void);
+
+void process_start_first(unsigned int esp);
 
 #endif
